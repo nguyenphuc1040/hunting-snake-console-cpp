@@ -20,6 +20,6 @@
 ## Change Wall Map in game play
 
 + Go to folder `./graphics`
-+ Open file `wallmap.txt`
++ Open any file with mode
 + Change file: `0` is none wall and `1` is have wall
 
