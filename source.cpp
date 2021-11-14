@@ -5,15 +5,17 @@
 #include <fstream>
 #include <string>
 #include <map>
-#include <cstdlib> // for rand() and srand()
+#include <cstdlib>
 
 #define width 118
 #define height 28
 using namespace std;
 
 map<string,bool> wallCollider2D; 
-vector<Position2D> snake = {Position2D(25,height/2), Position2D(23,height/2), Position2D(21,height/2), Position2D(19,height/2),Position2D(17,height/2),Position2D(15,height/2)};
-vector<string> menuOption = {"    PLAY GAME    ", "      EXIT      "};
+vector<string> wallColliderArray;
+vector<Position2D> snake;
+vector<string> menuOption = {"       EASY        ", "      NORMAL       ","       HARD        ", "      MASTER       ","       EXIT        "};
+                
 int timeDelay,indexMenu;
 Position2D direction(2,0);
 Position2D food(0,0);
@@ -31,6 +33,7 @@ void Move();
 bool SnakeCollisionEnter2D();
 bool SnakeEatFood();
 void InitWall();
+void ReadWallFromFile(string);
 void UpdateScore();
 bool AddLengthSnake();
 void RenderScore();
@@ -45,16 +48,33 @@ int Menu(){
     indexMenu = 0;
    
     while (true){
+        
         MenuOption();
         if (indexMenu==menuOption.size()-1) exit(-1);
-        else if (indexMenu==0) PlayGame();
+        else {
+            switch (indexMenu) {
+                case 0:
+                    ReadWallFromFile("easy");
+                    break;
+                case 1:
+                    ReadWallFromFile("normal");
+                    break;
+                case 2:
+                    ReadWallFromFile("hard");
+                    break;
+                case 3:
+                    ReadWallFromFile("master");
+                    break;
+            }
+            PlayGame();
+        }
         RenderScore();
     }
 }
 void RenderScore(){
     textcolor(15);
     system("cls");
-    gotoXY(47,16);
+    gotoXY(47,16+ menuOption.size());
     cout << "Score: ";
     textcolor(3);
     cout << score ;
@@ -69,43 +89,44 @@ void IndexChoice(byte color,byte color1){
     cout << menuOption.at(indexMenu);
 }
 int MenuOption(){
+    ShowCur(false);
     RenderTitleGame(50,5);
     int i = 0;
+    IndexChoice(7,16);
     for (auto item : menuOption){
-        textcolor(15);
         gotoXY(50,8+i*2);
         cout << item;
         i++;
     }
-    gotoXY(45,26);
+    gotoXY(46,26);
     textcolor(7);
     cout << "Copyright by nguyenphuc1040";
-    IndexChoice(3,0);
+    IndexChoice(5,15);
     while (true){
         int input = inputKey();
         switch (input){
             case 72:
             case 87:
             case 119:
-                IndexChoice(0,15);
+                IndexChoice(7,16);
                 if (indexMenu==0) indexMenu = menuOption.size()-1;  
                     else indexMenu--;
-                IndexChoice(3,0);
+                IndexChoice(5,15);
                 break;
             case 80:
             case 83:
             case 115: 
-                IndexChoice(0,15);
+                IndexChoice(7,16);
                 if (indexMenu==menuOption.size()-1) indexMenu = 0;
                     else indexMenu++;
-                IndexChoice(3,0);
+                IndexChoice(5,15);
                 break;
         }
         if (input==13){
             break;
         }
     }
-
+     textcolor(15);
 }
 void RenderTitleGame(int x, int y){
     gotoXY(x,y);
@@ -116,12 +137,13 @@ void RenderTitleGame(int x, int y){
 
 }
 int PlayGame(){
+    ShowCur(false);
     direction.SetXY(2,0);
-    snake = {Position2D(25,height/2), Position2D(23,height/2), Position2D(21,height/2), Position2D(19,height/2),Position2D(17,height/2),Position2D(15,height/2)};
+    snake = {Position2D(13,4), Position2D(11,4), Position2D(9,4), Position2D(7,4),Position2D(5,4),Position2D(3,4)};
     textcolor(15);
     system("cls");
     RenderTitleGame(50,1);
-    timeDelay = 150;
+    timeDelay = 150; // time delay processor at the same time speed of snake
     score = -1;
     UpdateScore();
     InitWall();
@@ -149,37 +171,44 @@ void UpdateScore(){
     textcolor(15);
     cout << "Score: " << score;
 }
+void ReadWallFromFile(string x){
+    ifstream fi("graphics/map"+x+".txt");
+    wallColliderArray.clear();
+    while (true){
+        string line;
+        getline(fi,line);
+        if (fi.eof()) break;
+        wallColliderArray.push_back(line);
+    }
+    fi.close();
+}
 void InitWall(){
     // Height 29 Width 118?
-    textcolor(8*16);
-    gotoXY(2,3);
-    for (int i=0; i<=115; i++){
-        cout << " ";
-        wallCollider2D[to_string(i+2)+";3"] = true;
-    }
-    gotoXY(2,28);
-    for (int i=0; i<=115; i++){
-        cout << " ";
-        wallCollider2D[to_string(i+2)+";28"] = true;
-    }
-    for (int i=4; i<height; i++) {
-        gotoXY(2,short(i));
-        cout << " ";
-        wallCollider2D["1;"+to_string(i)] = true;
-    }
-    for (int i=4; i<height; i++) {
-        gotoXY(117,short(i));
-        cout << " ";
-        wallCollider2D["117;"+to_string(i)] = true;
+    
+    wallCollider2D.clear();
+    for (int y=0; y<wallColliderArray.size(); y++){
+        for (int x=0; x<wallColliderArray[y].length(); x++){
+            if (wallColliderArray[y][x]=='1') {
+                textcolor(8*16);
+                gotoXY(x,y);
+                cout << " "; // Print Wall
+                wallCollider2D[to_string(x)+";"+to_string(y)] = true; // Wall Collider 
+            } else
+            if (wallColliderArray[y][x]!='0') {
+                textcolor(6);
+                gotoXY(x,y);
+                cout << wallColliderArray[y][x];
+            }
+        }
     }
 }
 int GetHighScore(int score){
-    ifstream fi("data.txt");
+    ifstream fi("storage/highscore.txt");
     int bestScore;
     fi >> bestScore;
     fi.close();
     if (bestScore<score) {
-        ofstream fo("data.txt");
+        ofstream fo("storage/highscore.txt");
         fo << score;
         fo.close();
         return score;
@@ -283,7 +312,7 @@ bool FoodRender(){
         Position2D xy(x,y);
         bool checkPositionSpawn = false;
         for (Position2D position : snake){
-            if (xy==position) {
+            if (xy==position || wallCollider2D[to_string(x)+";"+to_string(y)]) {
                 checkPositionSpawn = true;
                 break;
             }
